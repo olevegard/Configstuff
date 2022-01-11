@@ -8,10 +8,15 @@ call vundle#begin()
 " let Vundle manage Vundle, required
 Plugin 'VundleVim/Vundle.vim'
 Plugin 'ycm-core/YouCompleteMe'
+Plugin 'udalov/kotlin-vim'
 Plugin 'duckwork/nirvana'
 Plugin 'junk-e/identity'
 Plugin 'rafi/awesome-vim-colorschemes'
 Plugin 'dart-lang/dart-vim-plugin'
+Plugin 'airblade/vim-gitgutter'
+Plugin 'WolfgangMehner/git-support'
+Plugin 'preservim/nerdtree' |
+            \ Plugin 'PhilRunninger/nerdtree-buffer-ops'
 " The following are examples of different formats supported.
 " Keep Plugin commands between vundle#begin/end.
 " plugin on GitHub repo
@@ -41,14 +46,74 @@ filetype plugin indent on    " required
 " :PluginClean      - confirms removal of unused plugins; append `!` to auto-approve removal
 "
 " see :h vundle for more details or wiki for FAQ
-" Put your non-Plugin stuff after this line
-"
-"
-nnoremap <leader>pb :b# <CR>
+"" YCM populate lest of errors so we can jump between them
+let g:ycm_always_populate_location_list = 1
 
-nnoremap <leader>jd :YcmCompleter GoToDefinition<CR>
+" Enable YCM support for other languages 
+" For flutter 2_5_3
+ let g:ycm_language_server =
+ \ [
+ \   {
+ \     'name': 'dart',
+ \     'cmdline': [ '/home/olevegard-work/Programming/dart_2_15_1/bin/dart', "/home/olevegard-work/Programming/dart_2_15_1/bin/snapshots/analysis_server.dart.snapshot", '--lsp' ],
+ \     'filetypes': [ 'dart' ]
+ \   },
+ \   {
+ \     'name': 'kotlin',
+ \     'cmdline': [ '/home/olevegard-work/Programming/kotlin-lsp/server/bin/kotlin-language-server' ],
+ \     'filetypes': [ 'kotlin' ]
+ \   }
+ \ ]
+ " 
+
+" For flutter 1_22_6
+ " let g:ycm_language_server =
+ " \ [
+ " \   {
+ " \     'name': 'dart',
+ " \     'cmdline': [ '/home/olevegard-work/Programming/dart_1_10_5/bin/dart', "/home/olevegard-work/Programming/dart_1_10_5/bin/snapshots/analysis_server.dart.snapshot", '--lsp' ],
+ " \     'filetypes': [ 'dart' ]
+ " \   }
+ " \ ]
+
+
+
+
+"  \      'cmdline': [ 'dart', "/home/olevegard-work/Programming/dart-sdk/bin/snapshots/dartanalyzer.dart.snapshot", '--lsp' ],
+
+"let g:ycm_language_server =
+" \ [
+" \   {
+" \     'name': 'dart',
+" \     'cmdline': [ 'dart', "/home/olevegard-work/Programming/dart-sdk/bin/snapshots/analysis_server.dart.snapshot", '--lsp' ],
+" \    'filetypes': [ 'dart' ]
+" \   }
+" \ ]
+
+
+
+" Put your non-Plugin stuff after this line
+" Remaps
+" <leader> = '\'
+
+" Use tk/tj to jump to between buffers
+nnoremap tk :bp<CR>
+nnoremap tj :bn<CR>
+
+" Use \opn to open path in new buffer
+nnoremap <leader>opn :wincmd F <CR> <bar> :wincmd L <CR>
+
+" YCM hotkeys
+" Goto definition in the same buffer ( vertical )
+nnoremap <leader>jds :YcmCompleter GoToDefinition<CR>
+
+" Goto definition but in a new buffer ( vertical )
+nnoremap <leader>jdn :vert sb <bar> :YcmCompleter GoToDefinition<CR>
 nnoremap <leader>res :YcmRestartServer<CR>
 nnoremap <leader>fix :YcmCompleter FixIt<CR>
+nnoremap <leader>ren :YcmCompleter RefactorRename<CR>
+
+nnoremap <leader>ref :YcmCompleter GoToReferences<CR>
 
 " Jump between errors
 nnoremap <leader>ne :lnext<CR>
@@ -60,31 +125,43 @@ nnoremap <leader>gbd :! go build %<CR>
 nnoremap <leader>gor :! go run %<CR>
 
 " Dart
-nnoremap <leader>dfmt :w!<CR> :! flutter format --line-length 120 % <CR>
+nnoremap <leader>dfmt :w!<CR> :! flutter format --line-length 100 % <CR>
 nnoremap <leader>dtest :! flutter test % <CR>
 nnoremap <leader>dtall :! flutter test <CR>
 nnoremap <leader>pget :! flutter pub get <CR>
-nnoremap <leader>prun :! flutter pub run build_runner build --delete-conflicting-outputs <CR>
+nnoremap <leader>prun :! flutter pub run build_runner build --delete-conflicting-outputs  <CR>
 nnoremap <leader>json :! dart lib/localization/json_to_dart.dart <CR>
-nnoremap <leader>anal :! flutter analyze <CR>
+
+" Flutter analyze all
+nnoremap <leader>anala :! flutter analyze <CR>
+" Flutter analyze current dir
+nnoremap <leader>anald :! flutter analyze "$(dirname %)" <CR>
+" Flutter analyze current file
+nnoremap <leader>analf :! flutter analyze "$(dirname %)" \| grep "$(basename %)" <CR>
 nnoremap <leader>frun :! flutter run  <CR>
 
+" Git
+nnoremap <leader>gdi : GitDiff %  <CR>
+nnoremap <leader>gsa : GitStatus <CR>
 
-" YCM populate lest of errors so we can jump between them
-let g:ycm_always_populate_location_list = 1
+" Tree view
+nnoremap <leader>nt : NERDTree <CR>
 
-let g:ycm_language_server =
-  \ [
-  \   {
-  \     'name': 'dart',
-  \     'cmdline': [ 'dart', "/home/olevegard-work/Programming/dart-sdk/bin/snapshots/analysis_server.dart.snapshot", '--lsp' ],
-  \    'filetypes': [ 'dart' ]
-  \   }
-  \ ]
+" Make GitDiff show diff for current file only
+" let g:Git_DiffExpandEmpty = 'yes'
+
+
+
+" Autosave when buffer changes
+autocmd TextChanged,TextChangedI <buffer> silent write
+
+autocmd User YcmQuickFixOpened <buffer> silent write
+" ,
 
 filetype plugin indent on
 "filetype plugin on
 " allow backspacing over everything in insert mode:
+set splitright
 set spell
 set spell spelllang=en_us,nb
 set spell spellfile="/home/olevegard-work/Programming/min_fotball/spelling/*"
@@ -132,10 +209,15 @@ set backspace=eol,start,indent
 set whichwrap+=<,>,h,l
 " Always center cursor
 set scrolloff=100
+
+set number relativenumber
+
+
 " Key bindings
-" Enter to insert empy line under.
+" Enter to insert empty line under.
 " <-Enter> O<Esc> "Does not work, KEY+Enter is interperated as Enter
 nmap <CR> o<Esc>
+
 " Copy using Ctrl + c, Ctrl + x and paste using Ctrl + p
 vmap <C-c> "+yi
 vmap <C-x> "+c
@@ -144,12 +226,16 @@ imap <C-v> <ESC>"+pa
 vmap <C-h> :%y+
 "Make mouse act like in terminal ( command line mode )
 set mouse=c
+
 " Set options
 set guioptions-=m "remove menu bar
 set guioptions-=T "remove toolbar
 set guioptions-=r "remove right-hand scroll bar
 set guioptions-=L "remove left-hand scroll bar
 set guifont=consolas:h22:cDEFAULT
+
 highlight ExtraWhitespace ctermbg=red guibg=red
+
 match ExtraWhitespace /\s\+$/
+
 map <leader>b "_
