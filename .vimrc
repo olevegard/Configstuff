@@ -55,7 +55,7 @@ let g:ycm_always_populate_location_list = 1
  \ [
  \   {
  \     'name': 'dart',
- \     'cmdline': [ '/home/olevegard-work/Programming/dart_2_15_1/bin/dart', "/home/olevegard-work/Programming/dart_2_15_1/bin/snapshots/analysis_server.dart.snapshot", '--lsp' ],
+ \     'cmdline': [ '/home/olevegard-work/Programming/dart_2_16_1/bin/dart', "/home/olevegard-work/Programming/dart_2_16_1/bin/snapshots/analysis_server.dart.snapshot", '--lsp' ],
  \     'filetypes': [ 'dart' ]
  \   },
  \   {
@@ -64,6 +64,33 @@ let g:ycm_always_populate_location_list = 1
  \     'filetypes': [ 'kotlin' ]
  \   }
  \ ]
+
+ "
+" For flutter 1_22_6
+ " let g:ycm_language_server =
+ " \ [
+ " \   {
+ " \     'name': 'dart',
+ " \     'cmdline': [ '/home/olevegard-work/Programming/dart_1_10_5/bin/dart', "/home/olevegard-work/Programming/dart_1_10_5/bin/snapshots/analysis_server.dart.snapshot", '--lsp' ],
+ " \     'filetypes': [ 'dart' ]
+ " \   }
+ " \ ]
+
+
+
+
+"  \      'cmdline': [ 'dart', "/home/olevegard-work/Programming/dart-sdk/bin/snapshots/dartanalyzer.dart.snapshot", '--lsp' ],
+
+"let g:ycm_language_server =
+" \ [
+" \   {
+" \     'name': 'dart',
+" \     'cmdline': [ 'dart', "/home/olevegard-work/Programming/dart-sdk/bin/snapshots/analysis_server.dart.snapshot", '--lsp' ],
+" \    'filetypes': [ 'dart' ]
+" \   }
+" \ ]
+
+
 
 " Put your non-Plugin stuff after this line
 " Remaps
