@@ -1,17 +1,67 @@
 -- =====================================================================================================================================
--- Plugins
+-- Ask to install packer if not present
 -- =====================================================================================================================================
 --Install packer :
---  git clone --depth 1 https://github.com/wbthomason/packer.nvim /.local/share/nvim/site/pack/packer/start/packer.nvim
+--  git clone --depth 1 https://github.com/wbthomason/packer.nvim ~/.local/share/nvim/site/pack/packer/start/packer.nvim
 
+local install_path = vim.fn.stdpath('data')..'/site/pack/packer/start/packer.nvim'
+packer_bootstrap = false
+
+-- Check if packer is installed
+if vim.fn.empty(vim.fn.glob(install_path)) > 0 then
+  -- Ask user before installing for security reasons
+  ans = vim.fn.input("Download packer from github.com/wbthomason/packer.nvim (y/n)")
+
+  -- Download plugin and add
+  if ( ans == 'y') then
+    packer_bootstrap = vim.fn.system({'git', 'clone', '--depth', '1', 'https://github.com/wbthomason/packer.nvim', install_path})
+    -- This line might not be nexessary
+    -- vim.cmd [[packadd packer.nvim]]
+  end
+
+  -- User said no, give a command to download packer instead
+  if ( ans == 'n') then
+    -- Force a new line
+    print("-")
+    print("Install by running (in terminal)")
+    print("git clone --depth 1 https://github.com/wbthomason/packer.nvim " .. install_path)
+    print("Then run ( in nvim)")
+    print("Then run :PackerSync");
+  end
+end
+
+-- =====================================================================================================================================
+-- Plugins
+-- =====================================================================================================================================
 require('packer').startup(function(use)
-  use 'wbthomason/packer.nvim' -- Package manager
-  use 'neovim/nvim-lspconfig' -- Configurations for Nvim LSP
-  use 'hrsh7th/nvim-cmp' -- Autocompletion plugin
-  use 'hrsh7th/cmp-nvim-lsp' -- LSP source for nvim-cmp
-  use 'saadparwaiz1/cmp_luasnip' -- Snippets source for nvim-cmp
-  use 'L3MON4D3/LuaSnip' -- Snippets plugin
+  use 'wbthomason/packer.nvim'        -- Package manager
+  use 'neovim/nvim-lspconfig'         -- Configurations for Nvim LSP
+  use 'hrsh7th/nvim-cmp'              -- Autocompletion plugin
+  use 'hrsh7th/cmp-nvim-lsp'          -- LSP source for nvim-cmp
+  use 'saadparwaiz1/cmp_luasnip'      -- Snippets source for nvim-cmp
+  use 'L3MON4D3/LuaSnip'              -- Snippets plugin
+  use 'rafi/awesome-vim-colorschemes' -- Colorschemes ( including jellybeans )
+  use 'preservim/nerdtree'            -- Tree view
+
+  use 'tpope/vim-surround' -- Change surronding brackets/quotes/tabs++
+  -- use 'tpope/fugitive' -- Git support
+  use 'tpope/vim-commentary' -- Commentary helpers
+
+  use {
+    'nvim-treesitter/nvim-treesitter',
+     run = function() require('nvim-treesitter.install').update({ with_sync = true }) end,
+  }
+
+  use 'nvim-treesitter/nvim-treesitter-context'
+
+  if packer_bootstrap then
+    require('packer').sync()
+  end
 end)
+
+
+-- Install any new plugins
+require("packer").install()
 
 -- =====================================================================================================================================
 -- Langauge support
@@ -50,20 +100,6 @@ local on_attach = function(client, bufnr)
   vim.keymap.set('n', 'gr', vim.lsp.buf.references, bufopts)
   vim.keymap.set('n', '<space>f', vim.lsp.buf.formatting, bufopts)
 end
-
-vim.keymap.set('n', '<Leader>lim', vim.lsp.buf.hover, bufopts)                      -- List all implementations
-vim.keymap.set('n', '<Leader>hov', vim.lsp.buf.hover, bufopts)                      -- Show info about the symbol under the cursor
-vim.keymap.set('n', '<Leader>fix', vim.lsp.buf.code_action, bufopts)                -- Show suggested fixes
-vim.keymap.set('n', '<Leader>jed', vim.lsp.buf.definition, bufopts)                 -- Jump to definition in the same buffer
-vim.keymap.set('n', '<Leader>jen', "vert sb | lua vim.lsp.buf.definition()<CR>")    -- Jump to definition in a new buffer
-
-vim.keymap.set('n', '<Leader>ref', vim.lsp.buf.references, bufopts) -- Show references
-vim.keymap.set('n', '<Leader>ren', vim.lsp.buf.rename, bufopts)     -- Rename symbol
-
-vim.keymap.set('n', '<Leader>pe', vim.diagnostic.goto_prev, bufopts)   -- Go to previous error
-vim.keymap.set('n', '<Leader>ne', vim.diagnostic.goto_next, bufopts)   -- Go to next error
-
-vim.keymap.set('n', '<Leader>hlp', vim.lsp.buf.signature_help, bufopts)
 
 local lsp_flags = {
   -- This is the default in Nvim 0.7+
@@ -131,6 +167,85 @@ cmp.setup {
   },
 }
 
+-- Tree sitter
+-- =====================================================================================================================================
+require'treesitter-context'.setup{
+    enable = true, -- Enable this plugin (Can be enabled/disabled later via commands)
+    max_lines = 0, -- How many lines the window should span. Values <= 0 mean no limit.
+    trim_scope = 'outer', -- Which context lines to discard if `max_lines` is exceeded. Choices: 'inner', 'outer'
+    patterns = { -- Match patterns for TS nodes. These get wrapped to match at word boundaries.
+        -- For all filetypes
+        -- Note that setting an entry here replaces all other patterns for this entry.
+        -- By setting the 'default' entry below, you can control which nodes you want to
+        -- appear in the context window.
+        default = {
+            'class',
+            'function',
+            'method',
+            'for',
+            'while',
+            'if',
+            'switch',
+            'case',
+        },
+        -- Patterns for specific filetypes
+        -- If a pattern is missing, *open a PR* so everyone can benefit.
+        tex = {
+            'chapter',
+            'section',
+            'subsection',
+            'subsubsection',
+        },
+        rust = {
+            'impl_item',
+            'struct',
+            'enum',
+        },
+        scala = {
+            'object_definition',
+        },
+        vhdl = {
+            'process_statement',
+            'architecture_body',
+            'entity_declaration',
+        },
+        markdown = {
+            'section',
+        },
+        elixir = {
+            'anonymous_function',
+            'arguments',
+            'block',
+            'do_block',
+            'list',
+            'map',
+            'tuple',
+            'quoted_content',
+        },
+        json = {
+            'pair',
+        },
+        yaml = {
+            'block_mapping_pair',
+        },
+    },
+    exact_patterns = {
+        -- Example for a specific filetype with Lua patterns
+        -- Treat patterns.rust as a Lua pattern (i.e "^impl_item$" will
+        -- exactly match "impl_item" only)
+        -- rust = true,
+    },
+
+    -- [!] The options below are exposed but shouldn't require your attention,
+    --     you can safely ignore them.
+
+    zindex = 20, -- The Z-index of the context window
+    mode = 'cursor',  -- Line used to calculate context. Choices: 'cursor', 'topline'
+    -- Separator between context and content. Should be a single character string, like '-'.
+    -- When separator is set, the context will only show up when there are at least 2 lines above cursorline.
+    separator = '-',
+}
+
 -- Language servers
 -- =====================================================================================================================================
 require('lspconfig')['pyright'].setup{
@@ -163,10 +278,40 @@ require('lspconfig')['rust_analyzer'].setup{
 vim.cmd('colorscheme jellybeans')
 
 -- =====================================================================================================================================
--- Shortcuts
+-- Vim Shortcuts
 -- =====================================================================================================================================
 -- Use \opn to open path in new buffer ( glitchy, maybe there is a better lua way? '
 vim.keymap.set('n', '<Leader>opn', ':wincmd F <CR> <bar> :wincmd L <CR>')
+
+-- =====================================================================================================================================
+-- LSP shortcuts
+-- =====================================================================================================================================
+vim.keymap.set('n', '<Leader>lim', vim.lsp.buf.hover, bufopts)                      -- List all implementations
+vim.keymap.set('n', '<Leader>hov', vim.lsp.buf.hover, bufopts)                      -- Show info about the symbol under the cursor
+vim.keymap.set('n', '<Leader>fix', vim.lsp.buf.code_action, bufopts)                -- Show suggested fixes
+vim.keymap.set('n', '<Leader>jed', vim.lsp.buf.definition, bufopts)                 -- Jump to definition in the same buffer
+vim.keymap.set('n', '<Leader>jen', "vert sb | lua vim.lsp.buf.definition()<CR>")    -- Jump to definition in a new buffer
+
+vim.keymap.set('n', '<Leader>ref', vim.lsp.buf.references, bufopts) -- Show references
+vim.keymap.set('n', '<Leader>ren', vim.lsp.buf.rename, bufopts)     -- Rename symbol
+
+vim.keymap.set('n', '<Leader>pe', vim.diagnostic.goto_prev, bufopts)   -- Go to previous error
+vim.keymap.set('n', '<Leader>ne', vim.diagnostic.goto_next, bufopts)   -- Go to next error
+
+vim.keymap.set('n', '<Leader>hlp', vim.lsp.buf.signature_help, bufopts)
+
+
+-- =====================================================================================================================================
+-- NetdTree shortcuts
+-- =====================================================================================================================================
+vim.keymap.set('n', '<Leader>nto', ':NERDTree<CR>')         -- Open nerd tree
+vim.keymap.set('n', '<Leader>ntfo', ':NERDTreeFocus<CR>')   -- Focus Nerd tree
+vim.keymap.set('n', '<Leader>ntfi', ':NERDTreeFind<CR>')
+vim.keymap.set('n', '<Leader>nttt', ':NERDTreeToggle<CR>')
+-- nnoremap <leader>n :NERDTreeFocus<CR>
+-- nnoremap <C-n> :NERDTree<CR>
+-- nnoremap <C-t> :NERDTreeToggle<CR>
+-- nnoremap <C-f> :NERDTreeFind<CR>
 
 -- =====================================================================================================================================
 -- Language shortcuts
@@ -189,16 +334,17 @@ vim.keymap.set('n', '<Leader>drun', ':! dart % <CR>')
 -- =====================================================================================================================================
 -- Indentation and whitespaces
 -- =====================================================================================================================================
-vim.opt.tabstop = 2 		-- one tab characted = 2 spaces 
-vim.opt.shiftwidth = 2 	 	-- one level of indentation = 2 spaces
+vim.opt.tabstop = 2 		-- one tab character = 2 spaces
+vim.opt.shiftwidth = 4 	 	-- one level of indentation = 2 spaces
 vim.opt.expandtab = true  	-- tabs keypresses will be expanded into spaces
 vim.opt.softtabstop = 2 	-- how many columns of whitespace is a tab keypress or a backspace keypress worth?
-vim.opt.list = true  	    -- enables the use of listchar
+
+vim.opt.list = true  -- enables the use of listchar
 vim.opt.listchars = {		-- how various whitespaces should look
-	eol = '$', 			-- end of line
-	tab = '>-', 		-- tab
-	trail = '~',		-- trailing spaces
-	lead = '~',			-- leading spaces
+	eol = '$',        -- end of line
+	tab = '>-',       -- tab
+	trail = '~',      -- trailing spaces
+	lead = '~',       -- leading spaces
 	multispace = '~',	-- multiple spaces
 	extends = '>',		-- character to in the last column on each line when wrapping long pieces of text
 	precedes = '<'		-- character to in the first column on a new line when wrapping long pieces of text
@@ -209,7 +355,6 @@ vim.cmd('filetype plugin indent on')    -- Automatic indentation based on file t
 vim.keymap.set('n', '<Tab>', '>>')      -- Shift tab decrease indentation in insert mode
 vim.keymap.set('n', '<S-Tab>', '<<')    -- Shift tab decrease indentation in command mode
 vim.keymap.set('i', '<S-Tab>', '<C-d>') -- Shift tab increase indentation in command mode
-
 
 -- =====================================================================================================================================
 -- Line numbering
@@ -231,9 +376,14 @@ vim.opt.hlsearch = true     -- Highlight search matches
 -- Misc
 -- =====================================================================================================================================
 vim.opt.confirm = true -- Some operations that would normally fail because unsaved changes ( like ":e" ) will now give a prompt instead
+vim.opt.wrap = false  -- Disable implicit line breaks
 
 -- =====================================================================================================================================
 -- File system
 -- =====================================================================================================================================
--- set nobackup        " DON'T keep a backup file
--- set noswapfile
+vim.opt.backup = true     -- Keep a backup file
+vim.opt.swapfile = false  -- No swap file
+vim.opt.autoread = true   -- Automatically reload
+
+vim.cmd('autocmd TextChanged,TextChangedI <buffer> silent write')   -- Automatically save when a buffer changes
+-- vim.cmd('autocmd User YcmQuickFixOpened <buffer> silent write')     -- Automatically save when quickfix opens a window
