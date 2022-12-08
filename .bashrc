@@ -50,6 +50,17 @@ xterm*|rxvt*)
     ;;
 esac
 
+export ANDROID_HOME="$HOME/Android"
+export PATH="$PATH:$HOME/Programming/SDK/flutter/bin:$ANDROID_HOME/platform-tools/:$ANDROID_HOME/cmdline-tools/tools/bin/"
+export JAVA_HOME="/usr/lib/jvm/java-11-openjdk"
+export GOPATH="$HOME/Programming/go"
+
+export FIREBASE_TOOLS="$HOME/Programming/SDK/firebase_tools"
+export PATH="$PATH:$FIREBASE_TOOLS"
+
+export PUB_CACHE="$HOME/.pub-cache/bin"
+export PATH="$PATH:$PUB_CACHE"
+
 # Copy/paste alias
 alias pbcopy='xsel --clipboard --input'
 alias pbpaste='xsel --clipboard --output'
