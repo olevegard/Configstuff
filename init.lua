@@ -36,13 +36,17 @@ end
 require('packer').startup(function(use)
   use 'wbthomason/packer.nvim'        -- Package manager
   use 'neovim/nvim-lspconfig'         -- Configurations for Nvim LSP
+  use 'williamboman/mason.nvim'       -- Automatically install LSPs
   use 'hrsh7th/nvim-cmp'              -- Autocompletion plugin
   use 'hrsh7th/cmp-nvim-lsp'          -- LSP source for nvim-cmp
   use 'saadparwaiz1/cmp_luasnip'      -- Snippets source for nvim-cmp
   use 'L3MON4D3/LuaSnip'              -- Snippets plugin
   use 'rafi/awesome-vim-colorschemes' -- Colorschemes ( including jellybeans )
   use 'preservim/nerdtree'            -- Tree view
-  use 'Pocco81/auto-save.nvim'       -- Autosave
+  use 'Pocco81/auto-save.nvim'        -- Autosave
+
+  use 'chrisbra/Colorizer' -- Show color of hex values
+
 
   use 'tpope/vim-surround' -- Change surronding brackets/quotes/tabs++
   -- use 'tpope/fugitive' -- Git support
@@ -65,10 +69,22 @@ end)
 -- Install any new plugins
 require("packer").install()
 
+-- Language servers
+require("mason").setup({
+    ui = {
+        icons = {
+            package_installed = "✓",
+            package_pending = "➜",
+            package_uninstalled = "✗"
+        }
+    }
+})
+
 -- =====================================================================================================================================
 -- Langauge support
 -- =====================================================================================================================================
 require'lspconfig'.dartls.setup{} -- Enable LSP for Dart
+require'lspconfig'.gopls.setup{} -- Enable LSP for Go
 
 local opts = { noremap=true, silent=true }
 vim.keymap.set('n', '<space>e', vim.diagnostic.open_float, opts)
@@ -112,7 +128,7 @@ local lsp_flags = {
 -- =====================================================================================================================================
 -- Add additional capabilities supported by nvim-cmp
 local capabilities = vim.lsp.protocol.make_client_capabilities()
-capabilities = require('cmp_nvim_lsp').update_capabilities(capabilities)
+capabilities = require('cmp_nvim_lsp').default_capabilities(capabilities)
 
 local lspconfig = require('lspconfig')
 
@@ -312,6 +328,11 @@ require('lspconfig')['rust_analyzer'].setup{
     }
 }
 
+-- require('lspconfig')["gopls"].setup{
+--    on_attach = on_attach,
+--    flags = lsp_flags,
+--}
+
 -- =====================================================================================================================================
 -- Colorscheme
 -- =====================================================================================================================================
@@ -362,7 +383,7 @@ vim.keymap.set('n', '<Leader>gbd', ':! go build %<CR>')
 vim.keymap.set('n', '<Leader>gor', 'go run %<CR>')
 
 -- Dart + Flutter
-vim.keymap.set('n', '<Leader>dfmt', ':! flutter format --line-length 120 % <CR>')
+vim.keymap.set('n', '<Leader>dfmt', ':! dart format --line-length 120 % <CR>')
 vim.keymap.set('n', '<Leader>dtest', ':! flutter test % <CR>')
 vim.keymap.set('n', '<Leader>pget ', ':! flutter pub get <CR>')
 vim.keymap.set('n', '<Leader>prun', ':! flutter pub run build_runner build --delete-conflicting-outputs <CR>')
@@ -370,6 +391,9 @@ vim.keymap.set('n', '<Leader>json', ':! dart lib/localization/json_to_dart.dart 
 vim.keymap.set('n', '<Leader>anal', ':! flutter analyze <CR>')
 vim.keymap.set('n', '<Leader>frun', ':! flutter run  <CR>')
 vim.keymap.set('n', '<Leader>drun', ':! dart % <CR>')
+
+-- JSON ( that's a language, right? )
+vim.keymap.set('n', '<Leader>jfmt', ':! jq . %> temp.json && mv temp.json % <CR>')
 
 -- =====================================================================================================================================
 -- Indentation and whitespaces
@@ -416,14 +440,14 @@ vim.opt.hlsearch = true     -- Highlight search matches
 -- Misc
 -- =====================================================================================================================================
 vim.opt.confirm = true -- Some operations that would normally fail because unsaved changes ( like ":e" ) will now give a prompt instead
-vim.opt.wrap = false  -- Disable implicit line breaks
+vim.opt.wrap = false   -- Disable implicit line breaks
 
 -- =====================================================================================================================================
 -- File system
 -- =====================================================================================================================================
-vim.opt.backup = false     -- Keep a backup file
+vim.opt.backup = false    -- Keep a backup file
 vim.opt.swapfile = false  -- No swap file
 vim.opt.autoread = true   -- Automatically reload
 
 vim.cmd('autocmd TextChanged,TextChangedI <buffer> silent write')   -- Automatically save when a buffer changes
--- vim.cmd('autocmd User YcmQuickFixOpened <buffer> silent write')     -- Automatically save when quickfix opens a window
+-- vim.cmd('autocmd User YcmQuickFixOpened <buffer> silent write')  -- Automatically save when quickfix opens a window
