@@ -44,9 +44,7 @@ require('packer').startup(function(use)
   use 'rafi/awesome-vim-colorschemes' -- Colorschemes ( including jellybeans )
   use 'preservim/nerdtree'            -- Tree view
   use 'Pocco81/auto-save.nvim'        -- Autosave
-
-  use 'chrisbra/Colorizer' -- Show color of hex values
-
+  use 'NvChad/nvim-colorizer.lua'     -- Hex colors
 
   use 'tpope/vim-surround' -- Change surronding brackets/quotes/tabs++
   -- use 'tpope/fugitive' -- Git support
@@ -79,6 +77,38 @@ require("mason").setup({
         }
     }
 })
+
+-- =====================================================================================================================================
+-- Colorizing hex coded colors
+-- =====================================================================================================================================
+vim.opt.termguicolors = true
+require("colorizer").setup {
+      filetypes = { "*" },
+      user_default_options = {
+        RGB = true, -- #RGB hex codes
+        RRGGBB = true, -- #RRGGBB hex codes
+        names = false, -- "Name" codes like Blue or blue
+        RRGGBBAA = true, -- #RRGGBBAA hex codes
+        AARRGGBB = false, -- 0xAARRGGBB hex codes
+        rgb_fn = false, -- CSS rgb() and rgba() functions
+        hsl_fn = false, -- CSS hsl() and hsla() functions
+        css = false, -- Enable all CSS features: rgb_fn, hsl_fn, names, RGB, RRGGBB
+        css_fn = false, -- Enable all CSS *functions*: rgb_fn, hsl_fn
+        -- Available modes for `mode`: foreground, background,  virtualtext
+        mode = "background", -- Set the display mode.
+        -- Available methods are false / true / "normal" / "lsp" / "both"
+        -- True is same as normal
+        tailwind = false, -- Enable tailwind colors
+        -- parsers can contain values used in |user_default_options|
+        sass = { enable = false, parsers = { "css" }, }, -- Enable sass colors
+        virtualtext = "■",
+        -- update color values even if buffer is not focused
+        -- example use: cmp_menu, cmp_docs
+        always_update = false
+      },
+      -- all the sub-options of filetypes apply to buftypes
+      buftypes = {},
+  }
 
 -- =====================================================================================================================================
 -- Langauge support
@@ -332,6 +362,35 @@ require('lspconfig')['rust_analyzer'].setup{
 --    on_attach = on_attach,
 --    flags = lsp_flags,
 --}
+--
+----[[ Your uuid function global and renamed for example --]]
+function generate_uuid()
+    math.randomseed(os.time())
+local random = math.random
+local template = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+return string.gsub(template, "x", 
+function()
+return string.format("%x", random(0, 0xf)) --formatted as a hex number
+end
+)
+end
+
+--[[ Generate a uuid and place it at current cursor position --]]
+local insert_uuid = function()
+    -- Get row and column cursor,
+    -- use unpack because it's a tuple.
+    local row, col = unpack(vim.api.nvim_win_get_cursor(0))
+    local uuid = generate_uuid()
+    -- Notice the uuid is given as an array parameter, you can pass multiple strings.
+    -- Params 2-5 are for start and end of row and columns.
+    -- See earlier docs for param clarification or `:help nvim_buf_set_text.
+    vim.api.nvim_buf_set_text(0, row - 1, col, row - 1, col, { uuid })
+end
+
+-- Finally we map this somewhere to the key and mode we want.
+-- i stands for insert mode next set the insert_uuid without invoking it.
+-- For the last parameter see `:help map-arguments`  and adjust accordingly.
+vim.keymap.set('i', '^u', insert_uuid, { noremap = true, silent = true })
 
 -- =====================================================================================================================================
 -- Colorscheme
@@ -421,6 +480,14 @@ vim.keymap.set('n', '<S-Tab>', '<<')    -- Shift tab decrease indentation in com
 vim.keymap.set('i', '<S-Tab>', '<C-d>') -- Shift tab increase indentation in command mode
 
 -- =====================================================================================================================================
+-- Blackhole remapping
+-- =====================================================================================================================================
+-- 'D' now deletes text wihtouth adding it to the register
+vim.keymap.set('n', 'D', '\"_d')
+-- 'C' now changes text wihtouth adding it to the register
+vim.keymap.set('n', 'C', '\"_c')
+
+-- =====================================================================================================================================
 -- Line numbering
 -- =====================================================================================================================================
 vim.opt.cursorline = true       -- Highlight current line
@@ -448,6 +515,7 @@ vim.opt.wrap = false   -- Disable implicit line breaks
 vim.opt.backup = false    -- Keep a backup file
 vim.opt.swapfile = false  -- No swap file
 vim.opt.autoread = true   -- Automatically reload
+
 
 vim.cmd('autocmd TextChanged,TextChangedI <buffer> silent write')   -- Automatically save when a buffer changes
 -- vim.cmd('autocmd User YcmQuickFixOpened <buffer> silent write')  -- Automatically save when quickfix opens a window
