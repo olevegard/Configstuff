@@ -45,6 +45,10 @@ require('packer').startup(function(use)
   use 'preservim/nerdtree'            -- Tree view
   use 'Pocco81/auto-save.nvim'        -- Autosave
   use 'NvChad/nvim-colorizer.lua'     -- Hex colors
+  use 'hiphish/rainbow-delimiters.nvim' -- Colored Delimiters/parentheses
+
+  use 'echasnovski/mini.nvim' -- Highlight current scope
+  use 'stevearc/aerial.nvim'  -- Use \a to show list of code blocs
 
   use 'tpope/vim-surround' -- Change surronding brackets/quotes/tabs++
   -- use 'tpope/fugitive' -- Git support
@@ -52,10 +56,17 @@ require('packer').startup(function(use)
 
   use {
     'nvim-treesitter/nvim-treesitter',
-     run = function() require('nvim-treesitter.install').update({ with_sync = true }) end,
+    run = ':TSUpdate'
   }
 
-  use 'nvim-treesitter/nvim-treesitter-context'
+use 'nvim-treesitter/nvim-treesitter-context'
+    --[[
+  use {
+    'nvim-treesitter/nvim-treesitter',
+     run = function() require('nvim-treesitter.install').update({ with_sync = true }) end,
+  }
+  ]]
+
 
 
   if packer_bootstrap then
@@ -110,11 +121,45 @@ require("colorizer").setup {
       buftypes = {},
   }
 
+
+-- =====================================================================================================================================
+-- Rainbow Parentheses
+-- =====================================================================================================================================
+
+  -- This module contains a number of default definitions
+local rainbow_delimiters = require 'rainbow-delimiters'
+
+---@type rainbow_delimiters.config
+vim.g.rainbow_delimiters = {
+    strategy = {
+        [''] = rainbow_delimiters.strategy['global'],
+        vim = rainbow_delimiters.strategy['local'],
+    },
+    query = {
+        [''] = 'rainbow-delimiters',
+        lua = 'rainbow-blocks',
+    },
+    priority = {
+        [''] = 110,
+        lua = 210,
+    },
+    highlight = {
+        'RainbowDelimiterRed',
+        'RainbowDelimiterYellow',
+        'RainbowDelimiterBlue',
+        'RainbowDelimiterOrange',
+        'RainbowDelimiterGreen',
+        'RainbowDelimiterViolet',
+        'RainbowDelimiterCyan',
+    },
+}
+
 -- =====================================================================================================================================
 -- Langauge support
 -- =====================================================================================================================================
 require'lspconfig'.dartls.setup{} -- Enable LSP for Dart
 require'lspconfig'.gopls.setup{} -- Enable LSP for Go
+require'lspconfig'.csharp_ls.setup{} -- Enable LSP for C#
 
 local opts = { noremap=true, silent=true }
 vim.keymap.set('n', '<space>e', vim.diagnostic.open_float, opts)
@@ -154,6 +199,27 @@ local lsp_flags = {
   debounce_text_changes = 150,
 }
 
+-- =====================================================================================================================================
+-- Highlight current scope
+-- =====================================================================================================================================
+ require('mini.indentscope').setup()
+
+-- =====================================================================================================================================
+-- Show document outline
+-- =====================================================================================================================================
+require("aerial").setup({
+  layout = {
+    default_direction = "prefer_left",
+  },
+  on_attach = function(bufnr)
+    -- Jump forwards/backwards with '{' and '}'
+    vim.keymap.set("n", "{", "<cmd>AerialPrev<CR>", { buffer = bufnr })
+    vim.keymap.set("n", "}", "<cmd>AerialNext<CR>", { buffer = bufnr })
+  end,
+})
+-- Use `\a' to open
+vim.keymap.set("n", "<leader>a", "<cmd>AerialToggle!<CR>")
+
 -- Autocomplete
 -- =====================================================================================================================================
 -- Add additional capabilities supported by nvim-cmp
@@ -177,33 +243,41 @@ end
 -- Autocompletion
 local cmp = require 'cmp'
 cmp.setup {
+    ----------------------------------
 -- snippet = {
---   expand = function(args)
---     luasnip.lsp_expand(args.body)
---   end,
--- },
+-- expand = function(args)
+--luasnip.lsp_expand(args.body)
+--end,
+--},
+-- ---------------------------------
   mapping = cmp.mapping.preset.insert({
     ['<C-d>'] = cmp.mapping.scroll_docs(-4),
     ['<C-f>'] = cmp.mapping.scroll_docs(4),
     ['<C-Space>'] = cmp.mapping.complete(),
-    ['<CR>'] = cmp.mapping.confirm {
-      behavior = cmp.ConfirmBehavior.Replace,
-      select = true,
-    },
-    ['<Tab>'] = cmp.mapping(function(fallback)
+ ['<CR>'] = cmp.mapping.confirm {
+    behavior = cmp.ConfirmBehavior.Insert,
+    select = true,
+ },
+    ['<Tab>'] = cmp.mapping(
+    function(fallback)
       if cmp.visible() then
         cmp.select_next_item()
- --    elseif luasnip.expand_or_jumpable() then
- --      luasnip.expand_or_jump()
+        -----
+      -- elseif luasnip.expand_or_jumpable() then
+        -- luasnip.expand_or_jump()
+        -----
       else
         fallback()
       end
     end, { 'i', 's' }),
-    ['<S-Tab>'] = cmp.mapping(function(fallback)
+    ['<S-Tab>'] = cmp.mapping(
+    function(fallback)
       if cmp.visible() then
         cmp.select_prev_item()
-  --   elseif luasnip.jumpable(-1) then
-  --     luasnip.jump(-1)
+        --
+  elseif luasnip.jumpable(-1) then
+  luasnip.jump(-1)
+  --     ----
       else
         fallback()
       end
@@ -215,8 +289,36 @@ cmp.setup {
   },
 }
 
+-- =====================================================================================================================================
 -- Tree sitter
 -- =====================================================================================================================================
+require'treesitter-context'.setup{
+  enable = true, -- Enable this plugin (Can be enabled/disabled later via commands)
+  max_lines = 0, -- How many lines the window should span. Values <= 0 mean no limit.
+  min_window_height = 0, -- Minimum editor window height to enable context. Values <= 0 mean no limit.
+  line_numbers = true,
+  multiline_threshold = 20, -- Maximum number of lines to show for a single context
+  trim_scope = 'outer', -- Which context lines to discard if `max_lines` is exceeded. Choices: 'inner', 'outer'
+  mode = 'cursor',  -- Line used to calculate context. Choices: 'cursor', 'topline'
+  -- Separator between context and content. Should be a single character string, like '-'.
+  -- When separator is set, the context will only show up when there are at least 2 lines above cursorline.
+  separator = nil,
+  zindex = 20, -- The Z-index of the context window
+  on_attach = nil, -- (fun(buf: integer): boolean) return false to disable attaching
+}
+
+require'nvim-treesitter.configs'.setup {
+    -- A list of parser names, or "all" (the five listed parsers should always be installed)
+  ensure_installed = { "c", "cpp", "c_sharp", "go", "dart", "json", "xml", "html", "rust", "zig", "python", "java", "kotlin", "markdown", "sql" },
+
+  -- Install parsers synchronously (only applied to `ensure_installed`)
+  sync_install = false,
+
+  -- Automatically install missing parsers when entering buffer
+  -- Recommendation: set to false if you don't have `tree-sitter` CLI installed locally
+  auto_install = true,
+}
+--[[
 require'treesitter-context'.setup{
     enable = true, -- Enable this plugin (Can be enabled/disabled later via commands)
     max_lines = 0, -- How many lines the window should span. Values <= 0 mean no limit.
@@ -248,6 +350,9 @@ require'treesitter-context'.setup{
             'impl_item',
             'struct',
             'enum',
+        },
+        dart = {
+            'object_definition',
         },
         scala = {
             'object_definition',
@@ -293,7 +398,7 @@ require'treesitter-context'.setup{
     -- When separator is set, the context will only show up when there are at least 2 lines above cursorline.
     separator = '-',
 }
-
+]]
 
 -- Autosave
 -- =====================================================================================================================================
@@ -363,35 +468,6 @@ require('lspconfig')['rust_analyzer'].setup{
 --    flags = lsp_flags,
 --}
 --
-----[[ Your uuid function global and renamed for example --]]
-function generate_uuid()
-    math.randomseed(os.time())
-local random = math.random
-local template = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-return string.gsub(template, "x", 
-function()
-return string.format("%x", random(0, 0xf)) --formatted as a hex number
-end
-)
-end
-
---[[ Generate a uuid and place it at current cursor position --]]
-local insert_uuid = function()
-    -- Get row and column cursor,
-    -- use unpack because it's a tuple.
-    local row, col = unpack(vim.api.nvim_win_get_cursor(0))
-    local uuid = generate_uuid()
-    -- Notice the uuid is given as an array parameter, you can pass multiple strings.
-    -- Params 2-5 are for start and end of row and columns.
-    -- See earlier docs for param clarification or `:help nvim_buf_set_text.
-    vim.api.nvim_buf_set_text(0, row - 1, col, row - 1, col, { uuid })
-end
-
--- Finally we map this somewhere to the key and mode we want.
--- i stands for insert mode next set the insert_uuid without invoking it.
--- For the last parameter see `:help map-arguments`  and adjust accordingly.
-vim.keymap.set('i', '^u', insert_uuid, { noremap = true, silent = true })
-
 -- =====================================================================================================================================
 -- Colorscheme
 -- =====================================================================================================================================
@@ -402,6 +478,7 @@ vim.cmd('colorscheme jellybeans')
 -- =====================================================================================================================================
 -- Use \opn to open path in new buffer ( glitchy, maybe there is a better lua way? '
 vim.keymap.set('n', '<Leader>opn', ':wincmd F <CR> <bar> :wincmd L <CR>')
+-- =====================================================================================================================================
 
 -- =====================================================================================================================================
 -- LSP shortcuts
@@ -436,6 +513,10 @@ vim.keymap.set('n', '<Leader>nttt', ':NERDTreeToggle<CR>')
 -- =====================================================================================================================================
 -- Language shortcuts
 -- =====================================================================================================================================
+-- .NET
+vim.keymap.set('n', '<Leader>dnf', ':!dotnet format<CR>')
+vim.keymap.set('n', '<Leader>dnr', ':!dotnet run<CR>')
+
 -- Go
 vim.keymap.set('n', '<Leader>gfmt', ':! go fmt %<CR>')
 vim.keymap.set('n', '<Leader>gbd', ':! go build %<CR>')
@@ -453,6 +534,53 @@ vim.keymap.set('n', '<Leader>drun', ':! dart % <CR>')
 
 -- JSON ( that's a language, right? )
 vim.keymap.set('n', '<Leader>jfmt', ':! jq . %> temp.json && mv temp.json % <CR>')
+
+
+-- =====================================================================================================================================
+-- Code generation
+-- =====================================================================================================================================
+-- Your uuid function global and renamed for example --]]
+function generate_uuid()
+  math.randomseed(os.time())
+  local random = math.random
+  local template = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+  return string.gsub(template, "x", 
+    function()
+        return string.format("%x", random(0, 0xf)) --formatted as a hex number
+    end
+  )
+end
+
+--[[ Generate a uuid and place it at current cursor position --]]
+local insert_uuid = function()
+    -- Get row and column cursor,
+    -- use unpack because it's a tuple.
+    local row, col = unpack(vim.api.nvim_win_get_cursor(0))
+    local uuid = generate_uuid()
+    -- Notice the uuid is given as an array parameter, you can pass multiple strings.
+    -- Params 2-5 are for start and end of row and columns.
+    -- See earlier docs for param clarification or `:help nvim_buf_set_text.
+    vim.api.nvim_buf_set_text(0, row - 1, col, row - 1, col, { uuid })
+end
+
+-- Finally we map this somewhere to the key and mode we want.
+-- i stands for insert mode next set the insert_uuid without invoking it.
+-- For the last parameter see `:help map-arguments`  and adjust accordingly.
+vim.keymap.set('i', '^u', insert_uuid, { noremap = true, silent = true })
+
+
+--[[ Insert basic error handling for Go]]
+local insert_err_handling = function()
+    -- Get row and column cursor,
+    -- use unpack because it's a tuple.
+    local row, col = unpack(vim.api.nvim_win_get_cursor(0))
+    local err_handling_code = {"", "\tif err != nil {", "\t\tlog.Println(err.Error())", "\t\treturn err", "\t}", ""}
+
+    vim.api.nvim_buf_set_lines(0, row , row , true, err_handling_code)
+end
+
+vim.keymap.set('n', '<Leader>err', insert_err_handling, { noremap = true, silent = true })
 
 -- =====================================================================================================================================
 -- Indentation and whitespaces
@@ -473,7 +601,7 @@ vim.opt.listchars = {		-- how various whitespaces should look
 	precedes = '<'		-- character to in the first column on a new line when wrapping long pieces of text
 }
 
-vim.cmd('filetype plugin indent on')    -- Automatic indentation based on file type
+-- vim.cmd('filetype plugin indent on')    -- Automatic indentation based on file type
 
 vim.keymap.set('n', '<Tab>', '>>')      -- Shift tab decrease indentation in insert mode
 vim.keymap.set('n', '<S-Tab>', '<<')    -- Shift tab decrease indentation in command mode
@@ -507,7 +635,7 @@ vim.opt.hlsearch = true     -- Highlight search matches
 -- Misc
 -- =====================================================================================================================================
 vim.opt.confirm = true -- Some operations that would normally fail because unsaved changes ( like ":e" ) will now give a prompt instead
-vim.opt.wrap = false   -- Disable implicit line breaks
+vim.opt.wrap = true   -- Disable implicit line breaks
 
 -- =====================================================================================================================================
 -- File system
